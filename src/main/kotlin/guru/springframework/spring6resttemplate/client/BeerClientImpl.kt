@@ -15,9 +15,6 @@ import java.util.*
 
 @Service
 class BeerClientImpl(private val restTemplateBuilder: RestTemplateBuilder) : BeerClient {
-    private val getBeerPath = "/api/v1/beer"
-    private val getBeerByIdPath = "/api/v1/beer/{beerId}"
-
     override fun listBeers(
         beerName: String,
         beerStyle: BeerStyle,
@@ -27,7 +24,7 @@ class BeerClientImpl(private val restTemplateBuilder: RestTemplateBuilder) : Bee
     ): Page<BeerDTO> {
         val restTemplate = restTemplateBuilder.build()
 
-        val uriComponentsBuilder: UriComponentsBuilder = UriComponentsBuilder.fromPath(getBeerPath)
+        val uriComponentsBuilder: UriComponentsBuilder = UriComponentsBuilder.fromPath(GET_BEER_PATH)
 
         uriComponentsBuilder
             .queryParam("beerName", beerName)
@@ -44,24 +41,30 @@ class BeerClientImpl(private val restTemplateBuilder: RestTemplateBuilder) : Bee
 
     override fun getBeerById(beerId: UUID): BeerDTO {
         val restTemplate = restTemplateBuilder.build()
-        return restTemplate.getForObject(getBeerByIdPath, BeerDTO::class.java, beerId) ?: BeerDTO()
+        return restTemplate.getForObject(GET_BEER_BY_ID_PATH, BeerDTO::class.java, beerId) ?: BeerDTO()
     }
 
     override fun createBeer(newDto: BeerDTO): BeerDTO {
         val restTemplate = restTemplateBuilder.build()
 
-        val uri: URI = restTemplate.postForLocation(getBeerPath, newDto) ?: URI("")
+        val uri: URI = restTemplate.postForLocation(GET_BEER_PATH, newDto) ?: URI("")
         return restTemplate.getForObject(uri.path, BeerDTO::class.java) ?: BeerDTO()
     }
 
     override fun updateBeer(beerDto: BeerDTO): BeerDTO {
         val restTemplate = restTemplateBuilder.build()
-        restTemplate.put(getBeerByIdPath, beerDto, beerDto.id)
+        restTemplate.put(GET_BEER_BY_ID_PATH, beerDto, beerDto.id)
         return getBeerById(beerDto.id)
     }
 
     override fun deleteBeer(beerId: UUID) {
         val restTemplate = restTemplateBuilder.build()
-        restTemplate.delete(getBeerByIdPath, beerId)
+        restTemplate.delete(GET_BEER_BY_ID_PATH, beerId)
+    }
+
+    companion object {
+        const val GET_BEER_PATH = "/api/v1/beer"
+        const val GET_BEER_BY_ID_PATH = "/api/v1/beer/{beerId}"
+        const val DEFAULT_PARAMS = "?beerName=&beerStyle=&showInventory&pageNumber=1&pageSize=25"
     }
 }
