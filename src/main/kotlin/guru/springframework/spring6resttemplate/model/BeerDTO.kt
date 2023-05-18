@@ -5,13 +5,13 @@ import java.time.LocalDateTime
 import java.util.*
 
 data class BeerDTO(
-    val id: UUID,
-    val version: Int,
-    val beerName: String,
-    val beerStyle: BeerStyle,
-    val upc: String,
-    val quantityOnHand: Int,
-    val price: BigDecimal,
-    val createdDate: LocalDateTime,
-    val updateDate: LocalDateTime
+    val id: UUID = UUID.randomUUID(),
+    val version: Int = 0,
+    var beerName: String = "",
+    val beerStyle: BeerStyle = BeerStyle.NONE,
+    val upc: String = "",
+    val quantityOnHand: Int = 0,
+    val price: BigDecimal = BigDecimal(0),
+    val createdDate: LocalDateTime = LocalDateTime.now(),
+    val updateDate: LocalDateTime = LocalDateTime.now()
 )
