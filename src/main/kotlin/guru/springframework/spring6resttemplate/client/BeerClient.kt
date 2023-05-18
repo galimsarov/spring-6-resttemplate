@@ -4,5 +4,5 @@ import guru.springframework.spring6resttemplate.model.BeerDTO
 import org.springframework.data.domain.Page
 
 interface BeerClient {
-    fun listBeers(): Page<BeerDTO>
+    fun listBeers(beerName: String = ""): Page<BeerDTO>
 }

@@ -10,7 +10,12 @@ class BeerClientImplTest {
     private lateinit var beerClient: BeerClient
 
     @Test
-    fun listBeers() {
+    fun listBeersNoBeerName() {
         beerClient.listBeers()
+    }
+
+    @Test
+    fun listBeers() {
+        beerClient.listBeers("ALE")
     }
 }
