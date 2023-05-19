@@ -8,6 +8,7 @@ import guru.springframework.spring6resttemplate.model.BeerStyle
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.Mock
 import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Autowired
@@ -21,6 +22,7 @@ import org.springframework.http.MediaType
 import org.springframework.test.web.client.MockRestServiceServer
 import org.springframework.test.web.client.match.MockRestRequestMatchers.*
 import org.springframework.test.web.client.response.MockRestResponseCreators.*
+import org.springframework.web.client.HttpClientErrorException
 import org.springframework.web.client.RestTemplate
 import org.springframework.web.util.UriComponentsBuilder
 import java.math.BigDecimal
@@ -114,6 +116,44 @@ class BeerClientMockTest {
         beerClient.deleteBeer(dto.id)
 
         server.verify()
+    }
+
+    @Test
+    fun testDeleteNotFound() {
+        server.expect(method(HttpMethod.DELETE))
+            .andExpect(requestToUriTemplate("$url${BeerClientImpl.GET_BEER_BY_ID_PATH}", dto.id))
+            .andRespond(withResourceNotFound())
+
+        assertThrows<HttpClientErrorException> { beerClient.deleteBeer(dto.id) }
+
+        server.verify()
+    }
+
+    @Test
+    fun testListBeersWithQueryParam() {
+        val response: String = objectMapper.writeValueAsString(getPage())
+
+        val uri: URI = UriComponentsBuilder
+            .fromHttpUrl("$url${BeerClientImpl.GET_BEER_PATH}")
+            .queryParam("beerName", "ALE")
+            .queryParam("beerStyle", "")
+            .queryParam("showInventory", "true")
+            .queryParam("pageNumber", "1")
+            .queryParam("pageSize", "25")
+            .build().toUri()
+
+        server.expect(method(HttpMethod.GET))
+            .andExpect(requestTo(uri))
+            .andExpect(queryParam("beerName", "ALE"))
+            .andExpect(queryParam("beerStyle", ""))
+            .andExpect(queryParam("showInventory", "true"))
+            .andExpect(queryParam("pageNumber", "1"))
+            .andExpect(queryParam("pageSize", "25"))
+            .andRespond(withSuccess(response, MediaType.APPLICATION_JSON))
+
+        val responsePage: Page<BeerDTO> = beerClient.listBeers(beerName = "ALE", showInventory = true)
+
+        assertThat(responsePage.content.size).isGreaterThan(0)
     }
 
     private fun mockGetOperation() {
