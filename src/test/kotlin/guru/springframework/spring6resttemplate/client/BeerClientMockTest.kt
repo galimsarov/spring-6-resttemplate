@@ -19,11 +19,11 @@ import org.springframework.data.domain.Page
 import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import org.springframework.test.web.client.MockRestServiceServer
-import org.springframework.test.web.client.match.MockRestRequestMatchers.method
-import org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo
+import org.springframework.test.web.client.match.MockRestRequestMatchers.*
 import org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess
 import org.springframework.web.client.RestTemplate
 import java.math.BigDecimal
+import java.util.*
 
 @Import(RestTemplateBuilderConfig::class)
 @RestClientTest
@@ -63,6 +63,19 @@ class BeerClientMockTest {
         assertThat(dtoPage.content.size).isGreaterThan(0)
     }
 
+    @Test
+    fun testGetBeerById() {
+        val dto = getBeerDto()
+        val response: String = objectMapper.writeValueAsString(dto)
+
+        server.expect(method(HttpMethod.GET))
+            .andExpect(requestToUriTemplate("$url${BeerClientImpl.GET_BEER_BY_ID_PATH}", dto.id))
+            .andRespond(withSuccess(response, MediaType.APPLICATION_JSON))
+
+        val responseDto: BeerDTO = beerClient.getBeerById(dto.id)
+        assertThat(responseDto.id).isEqualTo(dto.id)
+    }
+
     private fun getBeerDto() = BeerDTO(
         price = BigDecimal(10.99),
         beerName = "Mango Bobs",
@@ -71,5 +84,5 @@ class BeerClientMockTest {
         upc = "123245"
     )
 
-    fun getPage() = BeerDTOtPageImpl(listOf(getBeerDto()), 1, 25, 1)
+    private fun getPage() = BeerDTOtPageImpl(listOf(getBeerDto()), 1, 25, 1)
 }
