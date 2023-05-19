@@ -20,9 +20,11 @@ import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import org.springframework.test.web.client.MockRestServiceServer
 import org.springframework.test.web.client.match.MockRestRequestMatchers.*
-import org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess
+import org.springframework.test.web.client.response.MockRestResponseCreators.*
 import org.springframework.web.client.RestTemplate
+import org.springframework.web.util.UriComponentsBuilder
 import java.math.BigDecimal
+import java.net.URI
 import java.util.*
 
 @Import(RestTemplateBuilderConfig::class)
@@ -43,12 +45,18 @@ class BeerClientMockTest {
 
     private lateinit var server: MockRestServiceServer
 
+    private lateinit var dto: BeerDTO
+    private lateinit var dtoJson: String
+
     @BeforeEach
     fun setUp() {
         val restTemplate: RestTemplate = restTemplateBuilderConfigured.build()
         server = MockRestServiceServer.bindTo(restTemplate).build()
         Mockito.`when`(mockRestTemplateBuilder.build()).thenReturn(restTemplate)
         beerClient = BeerClientImpl(mockRestTemplateBuilder)
+
+        dto = getBeerDto()
+        dtoJson = objectMapper.writeValueAsString(dto)
     }
 
     @Test
@@ -65,15 +73,53 @@ class BeerClientMockTest {
 
     @Test
     fun testGetBeerById() {
-        val dto = getBeerDto()
-        val response: String = objectMapper.writeValueAsString(dto)
-
-        server.expect(method(HttpMethod.GET))
-            .andExpect(requestToUriTemplate("$url${BeerClientImpl.GET_BEER_BY_ID_PATH}", dto.id))
-            .andRespond(withSuccess(response, MediaType.APPLICATION_JSON))
+        mockGetOperation()
 
         val responseDto: BeerDTO = beerClient.getBeerById(dto.id)
         assertThat(responseDto.id).isEqualTo(dto.id)
+    }
+
+    @Test
+    fun testCreateBeer() {
+        val uri: URI = UriComponentsBuilder.fromPath(BeerClientImpl.GET_BEER_BY_ID_PATH).build(dto.id)
+
+        server.expect(method(HttpMethod.POST))
+            .andExpect(requestTo("$url${BeerClientImpl.GET_BEER_PATH}"))
+            .andRespond(withAccepted().location(uri))
+
+        mockGetOperation()
+
+        val responseDto: BeerDTO = beerClient.createBeer(dto)
+        assertThat(responseDto.id).isEqualTo(dto.id)
+    }
+
+    @Test
+    fun testUpdateBeer() {
+        server.expect(method(HttpMethod.PUT))
+            .andExpect(requestToUriTemplate("$url${BeerClientImpl.GET_BEER_BY_ID_PATH}", dto.id))
+            .andRespond(withNoContent())
+
+        mockGetOperation()
+
+        val responseDto: BeerDTO = beerClient.updateBeer(dto)
+        assertThat(responseDto.id).isEqualTo(dto.id)
+    }
+
+    @Test
+    fun testDeleteBeer() {
+        server.expect(method(HttpMethod.DELETE))
+            .andExpect(requestToUriTemplate("$url${BeerClientImpl.GET_BEER_BY_ID_PATH}", dto.id))
+            .andRespond(withNoContent())
+
+        beerClient.deleteBeer(dto.id)
+
+        server.verify()
+    }
+
+    private fun mockGetOperation() {
+        server.expect(method(HttpMethod.GET))
+            .andExpect(requestToUriTemplate("$url${BeerClientImpl.GET_BEER_BY_ID_PATH}", dto.id))
+            .andRespond(withSuccess(dtoJson, MediaType.APPLICATION_JSON))
     }
 
     private fun getBeerDto() = BeerDTO(
